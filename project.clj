@@ -4,4 +4,5 @@
                  [org.clojure/clojure-contrib "1.2.0"]
 		 [clj-http "0.1.1"]
                  [com.google.gdata/gdata-photos-2.0 "1.41.5"]]
+  :dev-dependencies [[swank-clojure "1.2.1"]]
   :repositories {"mandubian-mvn" "http://mandubian-mvn.googlecode.com/svn/trunk/mandubian-mvn/repository"})
