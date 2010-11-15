@@ -1,8 +1,7 @@
 (ns flickr
   (:require [clj-http.client :as http]
-	    [clojure.xml :as xml]
 	    [clojure.zip :as zip]
-	    [clojure.contrib.zip-filter.xml :as zf])
+	    [clojure.contrib.json :as json])
   (:import [java.security MessageDigest]
 	   [org.apache.commons.codec.binary Hex]
 	   [java.io ByteArrayInputStream]))
@@ -27,7 +26,7 @@
 
 (defn flickr-api-call
   ([method params secret]
-     (let [params+method (assoc params :method method)
+     (let [params+method (assoc params :method method :format "json" :nojsoncallback 1)
 	   params+sig (if secret (assoc params+method :api_sig (api-sig secret params+method))
 			  params+method)]
        (http/get "http://api.flickr.com/services/rest"
@@ -35,13 +34,16 @@
   ([method params]
       (flickr-api-call method params nil)))
 
-(defn xml-tags [s tag]
-  (zf/xml-> (zip/xml-zip (xml/parse (ByteArrayInputStream. (.getBytes s)))) tag zf/text))
+(defn response-data [method params secret field]
+  (-> (flickr-api-call method params secret) :body json/read-json))
 
-(defn response-field [method params secret field]
-  (-> (flickr-api-call method params secret) :body (xml-tags field)))
+(comment
+  (defn token [api-key secret]
+    (let [key {:api_key api-key}
+	  frob (first (response-field "flickr.auth.getFrob" key secret :frob))]
+      (first (response-field "flick.auth.getToken" (assoc key :frob frob) secret :token))))
 
-(defn token [api-key secret]
-  (let [key {:api_key api-key}
-	frob (first (response-field "flickr.auth.getFrob" key secret :frob))]
-    (first (response-field "flick.auth.getToken" (assoc key :frob frob) secret :token))))
+
+  (flickr-api-call "flickr.photos.search" {:api_key "40df4672034af04b8c4fc588e6711d37" :user_id "73799316@N00" :per_page 500 })
+  
+  (response-data "flickr.photos.getSizes" {:photo_id "5162599730" :api_key "40df4672034af04b8c4fc588e6711d37" } nil nil))
